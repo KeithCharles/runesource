@@ -211,7 +211,6 @@ public abstract class Client {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		} finally {
-			HostGateway.exit(getSocketChannel().socket().getInetAddress().getHostAddress());
 			Server.getSingleton().getClientMap().remove(key);
 			key.cancel();
 		}

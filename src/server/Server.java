@@ -144,12 +144,6 @@ public class Server implements Runnable {
 				break;
 			}
 
-			// Make sure we can allow this connection.
-			if (!HostGateway.enter(socket.socket().getInetAddress().getHostAddress())) {
-				socket.close();
-				continue;
-			}
-
 			// Set up the new connection.
 			socket.configureBlocking(false);
 			SelectionKey key = socket.register(selector, SelectionKey.OP_READ);
