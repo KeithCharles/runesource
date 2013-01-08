@@ -1,3 +1,4 @@
+package server;
 /*
  * This file is part of RuneSource.
  *
