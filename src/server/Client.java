@@ -17,11 +17,17 @@ package server;
  */
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-import java.security.SecureRandom;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.Channel;
+
+import server.net.ReceivedPacket;
+import server.net.util.ISAACCipher;
+import server.net.util.StreamBuffer;
 
 /**
  * The class behind a Player that handles all networking-related things.
@@ -29,20 +35,16 @@ import java.util.Arrays;
  * @author blakeman8192
  */
 public abstract class Client {
-
-	private final SelectionKey key;
-	private final ByteBuffer inData;
+	
+	private final Channel channel;
+	private final Queue<ReceivedPacket> queuedPackets = new ConcurrentLinkedQueue<ReceivedPacket>();
+	
 	private final Player player = (Player) this;
 	private final Misc.Stopwatch timeoutStopwatch = new Misc.Stopwatch();
-	private SocketChannel socketChannel;
 
-	private Stage stage;
-	private int packetOpcode = -1;
-	private int packetLength = -1;
 	private String username;
 	private String password;
 	private ISAACCipher encryptor;
-	private ISAACCipher decryptor;
 
 	/**
 	 * Creates a new Client.
@@ -50,13 +52,8 @@ public abstract class Client {
 	 * @param key
 	 *            the SelectionKey of the client
 	 */
-	public Client(SelectionKey key) {
-		this.key = key;
-		setStage(Stage.CONNECTED);
-		inData = ByteBuffer.allocateDirect(512);
-		if (key != null) {
-			socketChannel = (SocketChannel) key.channel();
-		}
+	public Client(Channel channel) {
+		this.channel = channel;
 	}
 
 	/**
@@ -73,6 +70,24 @@ public abstract class Client {
 	 */
 	public abstract void logout() throws Exception;
 
+	/**
+	 * Adds a packet to the queue
+	 * @param packet
+	 */
+	public void queuePacket(ReceivedPacket packet) {
+		queuedPackets.add(packet);
+	}
+	
+	/**
+	 * Handles packets we have received
+	 */
+	public void processQueuedPackets() {
+		ReceivedPacket packet = null;
+		while((packet = queuedPackets.poll()) != null) {
+			handlePacket(packet.getOpcode(), packet.getSize(), StreamBuffer.OutBuffer.newInBuffer(packet.getPayload()));
+		}
+	}
+	
 	/**
 	 * Sends all skills to the client.
 	 */
@@ -207,12 +222,8 @@ public abstract class Client {
 		System.out.println(this + " disconnecting.");
 		try {
 			logout();
-			getSocketChannel().close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
-		} finally {
-			Server.getSingleton().getClientMap().remove(key);
-			key.cancel();
 		}
 	}
 
@@ -251,11 +262,8 @@ public abstract class Client {
 	/**
 	 * Handles the current packet.
 	 */
-	private void handlePacket() {
+	private void handlePacket(int packetOpcode, int packetLength, StreamBuffer.InBuffer in) {
 		timeoutStopwatch.reset();
-		int positionBefore = inData.position();
-		StreamBuffer.InBuffer in = StreamBuffer.newInBuffer(inData);
-
 		// Handle the packet.
 		try {
 			switch (packetOpcode) {
@@ -322,74 +330,6 @@ public abstract class Client {
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
-		} finally {
-			// Make sure we have finished reading all of this packet.
-			int read = inData.position() - positionBefore;
-			for (int i = read; i < packetLength; i++) {
-				inData.get();
-			}
-		}
-	}
-
-	/**
-	 * Handles a received packet.
-	 */
-	public final void handleIncomingData() {
-		try {
-			// Read the incoming data.
-			if (getSocketChannel().read(inData) == -1) {
-				disconnect();
-				return;
-			}
-
-			// Handle the received data.
-			inData.flip();
-			while (inData.hasRemaining()) {
-
-				// Handle login if we need to.
-				if (getStage() != Stage.LOGGED_IN) {
-					handleLogin();
-					break;
-				}
-
-				// Decode the packet opcode.
-				if (packetOpcode == -1) {
-					packetOpcode = inData.get() & 0xff;
-					packetOpcode = packetOpcode - getDecryptor().getNextValue() & 0xff;
-				}
-
-				// Decode the packet length.
-				if (packetLength == -1) {
-					packetLength = Misc.packetLengths[packetOpcode];
-					if (packetLength == -1) {
-						if (!inData.hasRemaining()) {
-							inData.flip();
-							inData.compact();
-							break;
-						}
-						packetLength = inData.get() & 0xff;
-					}
-				}
-
-				// Decode the packet payload.
-				if (inData.remaining() >= packetLength) {
-					handlePacket();
-
-					// Reset for the next packet.
-					packetOpcode = -1;
-					packetLength = -1;
-				} else {
-					inData.flip();
-					inData.compact();
-					break;
-				}
-			}
-
-			// Clear everything for the next read.
-			inData.clear();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			disconnect();
 		}
 	}
 
@@ -400,123 +340,8 @@ public abstract class Client {
 	 *            the buffer
 	 * @throws IOException
 	 */
-	public void send(ByteBuffer buffer) {
-		// Prepare the buffer for writing.
-		buffer.flip();
-
-		try {
-			// ...and write it!
-			getSocketChannel().write(buffer);
-		} catch (IOException ex) {
-			ex.printStackTrace();
-			disconnect();
-		}
-	}
-
-	/**
-	 * Handles the login process of the client.
-	 */
-	private void handleLogin() throws Exception {
-		switch (getStage()) {
-		case CONNECTED:
-			if (inData.remaining() < 2) {
-				inData.compact();
-				return;
-			}
-
-			// Validate the request.
-			int request = inData.get() & 0xff;
-			inData.get(); // Name hash.
-			if (request != 14) {
-				System.err.println("Invalid login request: " + request);
-				disconnect();
-				return;
-			}
-
-			// Write the response.
-			StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(17);
-			out.writeLong(0); // First 8 bytes are ignored by the client.
-			out.writeByte(0); // The response opcode, 0 for logging in.
-			out.writeLong(new SecureRandom().nextLong()); // SSK.
-			send(out.getBuffer());
-
-			setStage(Stage.LOGGING_IN);
-			break;
-		case LOGGING_IN:
-			if (inData.remaining() < 2) {
-				inData.compact();
-				return;
-			}
-
-			// Validate the login type.
-			int loginType = inData.get();
-			if (loginType != 16 && loginType != 18) {
-				System.err.println("Invalid login type: " + loginType);
-				disconnect();
-				return;
-			}
-
-			// Ensure that we can read all of the login block.
-			int blockLength = inData.get() & 0xff;
-			if (inData.remaining() < blockLength) {
-				inData.flip();
-				inData.compact();
-				return;
-			}
-
-			// Read the login block.
-			StreamBuffer.InBuffer in = StreamBuffer.newInBuffer(inData);
-			in.readByte(); // Skip the magic ID value 255.
-
-			// Validate the client version.
-			int clientVersion = in.readShort();
-			if (clientVersion != 317) {
-				System.err.println("Invalid client version: " + clientVersion);
-				disconnect();
-				return;
-			}
-
-			in.readByte(); // Skip the high/low memory version.
-
-			// Skip the CRC keys.
-			for (int i = 0; i < 9; i++) {
-				in.readInt();
-			}
-
-			in.readByte(); // Skip RSA block length.
-			// If we wanted to, we would decode RSA at this point.
-
-			// Validate that the RSA block was decoded properly.
-			int rsaOpcode = in.readByte();
-			if (rsaOpcode != 10) {
-				System.err.println("Unable to decode RSA block properly!");
-				disconnect();
-				return;
-			}
-
-			// Set up the ISAAC ciphers.
-			long clientHalf = in.readLong();
-			long serverHalf = in.readLong();
-			int[] isaacSeed = { (int) (clientHalf >> 32), (int) clientHalf, (int) (serverHalf >> 32), (int) serverHalf };
-			setDecryptor(new ISAACCipher(isaacSeed));
-			for (int i = 0; i < isaacSeed.length; i++) {
-				isaacSeed[i] += 50;
-			}
-			setEncryptor(new ISAACCipher(isaacSeed));
-
-			// Read the user authentication.
-			in.readInt(); // Skip the user ID.
-			String username = in.readString();
-			String password = in.readString();
-			setUsername(username);
-			setPassword(password);
-
-			login();
-			setStage(Stage.LOGGED_IN);
-			break;
-		default:
-			break;
-		}
+	public void send(ChannelBuffer buffer) {
+		channel.write(buffer);
 	}
 
 	/**
@@ -525,7 +350,7 @@ public abstract class Client {
 	 * @return the host
 	 */
 	public String getHost() {
-		return getSocketChannel().socket().getInetAddress().getHostAddress();
+		return ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
 	}
 
 	/**
@@ -586,48 +411,12 @@ public abstract class Client {
 	}
 
 	/**
-	 * Sets the decryptor.
-	 * 
-	 * @param decryptor
-	 *            the decryptor.
-	 */
-	public void setDecryptor(ISAACCipher decryptor) {
-		this.decryptor = decryptor;
-	}
-
-	/**
-	 * Gets the decryptor.
-	 * 
-	 * @return the decryptor
-	 */
-	public ISAACCipher getDecryptor() {
-		return decryptor;
-	}
-
-	/**
 	 * Gets the Player subclass implementation of this superclass.
 	 * 
 	 * @return the player
 	 */
 	public Player getPlayer() {
 		return player;
-	}
-
-	/**
-	 * Gets the SocketChannel.
-	 * 
-	 * @return the SocketChannel
-	 */
-	public SocketChannel getSocketChannel() {
-		return socketChannel;
-	}
-
-	public void setStage(Stage stage) {
-		this.stage = stage;
-	}
-
-	public Stage getStage() {
-		return stage;
 	}
 
 	public Misc.Stopwatch getTimeoutStopwatch() {

@@ -16,9 +16,12 @@ package server;
  * along with RuneSource.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.nio.channels.SelectionKey;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.jboss.netty.channel.Channel;
+
+import server.net.util.StreamBuffer;
 
 /**
  * Represents a logged-in player.
@@ -62,8 +65,8 @@ public class Player extends Client {
 	 * @param key
 	 *            the SelectionKey
 	 */
-	public Player(SelectionKey key) {
-		super(key);
+	public Player(Channel channel) {
+		super(channel);
 
 		// Set the default appearance.
 		getAppearance()[Misc.APPEARANCE_SLOT_CHEST] = 18;
@@ -491,8 +494,6 @@ public class Player extends Client {
 	@Override
 	public void logout() throws Exception {
 		PlayerHandler.unregister(this);
-		setStage(Client.Stage.LOGGED_OUT);
-
 		System.out.println(this + " has logged out.");
 		if (getSlot() != -1) {
 			PlayerSave.save(this);

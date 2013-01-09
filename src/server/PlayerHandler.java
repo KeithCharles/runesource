@@ -1,4 +1,7 @@
 package server;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 /*
  * This file is part of RuneSource.
  *
@@ -28,6 +31,11 @@ public class PlayerHandler {
 
 	/** All registered NPCs. */
 	private static final Npc[] npcs = new Npc[8192];
+	
+	/**
+	 * Login queue
+	 */
+	private static final Queue<Player> queuedLogins = new ConcurrentLinkedQueue<Player>();
 
 	/**
 	 * Performs the processing of all players.
@@ -35,8 +43,33 @@ public class PlayerHandler {
 	 * @throws Exception
 	 */
 	public static void process() throws Exception {
-		// XXX: Maybe we could implement loop fusion to speed this up.
-
+		
+		/**
+		 * Process logins
+		 */
+		if(queuedLogins.size() > 0) {
+			for(int i = 0; i < (queuedLogins.size() > 10 ? 10 : queuedLogins.size()); i++) {
+				Player player = queuedLogins.poll();
+				player.login();
+			}
+		}
+		
+		/**
+		 * Process packets for each players
+		 */
+		for (int i = 0; i < players.length; i++) {
+			Player player = players[i];
+			if (player == null) {
+				continue;
+			}
+			try {
+				player.processQueuedPackets();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				player.disconnect();
+			}
+		}
+		
 		// Perform any logic processing for players.
 		for (int i = 0; i < players.length; i++) {
 			Player player = players[i];
@@ -215,6 +248,14 @@ public class PlayerHandler {
 	 */
 	public static Npc[] getNpcs() {
 		return npcs;
+	}
+	
+	/**
+	 * Queues a successful login
+	 * @param player
+	 */
+	public static void queueLogin(Player player) {
+		queuedLogins.add(player);
 	}
 
 }

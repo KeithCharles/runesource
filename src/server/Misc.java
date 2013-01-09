@@ -28,6 +28,8 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 /**
  * A collection of miscellaneous utility methods and constants.
  * 
@@ -341,6 +343,21 @@ public class Misc {
 			0, 4, 0, 0, 0, 0, -1, 0, -1, 4,// 240
 			0, 0, 6, 6, 0, 0, 0 // 250
 	};
+	
+	/**
+	 * Reads a RuneScape string from a buffer.
+	 * 
+	 * @param buf
+	 *            The buffer.
+	 * @return The string.
+	 */
+	public static String getRS2String(final ChannelBuffer buf) {
+		final StringBuilder bldr = new StringBuilder();
+		byte b;
+		while (buf.readable() && (b = buf.readByte()) != 10)
+			bldr.append((char) b);
+		return bldr.toString();
+	}
 
 	/**
 	 * A simple logging utility that prefixes all messages with a timestamp.

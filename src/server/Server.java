@@ -18,12 +18,12 @@ package server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.Executors;
+
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+
+import server.net.PipelineFactory;
 
 /**
  * The main core of RuneSource.
@@ -37,11 +37,8 @@ public class Server implements Runnable {
 	private final int port;
 	private final int cycleRate;
 
-	private Selector selector;
 	private InetSocketAddress address;
-	private ServerSocketChannel serverChannel;
 	private Misc.Stopwatch cycleTimer;
-	private Map<SelectionKey, Client> clientMap;
 
 	/**
 	 * Creates a new Server.
@@ -109,70 +106,19 @@ public class Server implements Runnable {
 	 * @throws IOException
 	 */
 	private void startup() throws IOException {
-		// Initialize the networking objects.
-		selector = Selector.open();
-		serverChannel = ServerSocketChannel.open();
-
-		// ... and configure them!
-		serverChannel.configureBlocking(false);
-		serverChannel.socket().bind(address);
-		serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+		// Initialize netty and begin listening for new clients
+		ServerBootstrap serverBootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
+		serverBootstrap.setPipelineFactory(new PipelineFactory());
+		serverBootstrap.bind(address);
 
 		// Finally, initialize whatever else we need.
 		cycleTimer = new Misc.Stopwatch();
-		clientMap = new HashMap<SelectionKey, Client>();
-	}
-
-	/**
-	 * Accepts any incoming connections.
-	 * 
-	 * @throws IOException
-	 */
-	private void accept() throws IOException {
-		SocketChannel socket;
-
-		/*
-		 * Here we use a for loop so that we can accept multiple clients per
-		 * cycle for lower latency. We limit the amount of clients that we
-		 * accept per cycle to better combat potential denial of service type
-		 * attacks.
-		 */
-		for (int i = 0; i < 10; i++) {
-			socket = serverChannel.accept();
-			if (socket == null) {
-				// No more connections to accept (as this one was invalid).
-				break;
-			}
-
-			// Set up the new connection.
-			socket.configureBlocking(false);
-			SelectionKey key = socket.register(selector, SelectionKey.OP_READ);
-			Client client = new Player(key);
-			System.out.println("Accepted " + client + ".");
-			getClientMap().put(key, client);
-		}
 	}
 
 	/**
 	 * Performs a server cycle.
 	 */
 	private void cycle() {
-		// First, handle all network events.
-		try {
-			selector.selectNow();
-			for (SelectionKey selectionKey : selector.selectedKeys()) {
-				if (selectionKey.isAcceptable()) {
-					accept(); // Accept a new connection.
-				}
-				if (selectionKey.isReadable()) {
-					// Tell the client to handle the packet.
-					getClientMap().get(selectionKey).handleIncomingData();
-				}
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
 		// Next, perform game processing.
 		try {
 			PlayerHandler.process();
@@ -195,15 +141,6 @@ public class Server implements Runnable {
 			System.out.println("[WARNING]: Server load: " + (100 + (Math.abs(sleepTime) / (cycleRate / 100))) + "%!");
 		}
 		cycleTimer.reset();
-	}
-
-	/**
-	 * Gets the client map.
-	 * 
-	 * @return the client map
-	 */
-	public Map<SelectionKey, Client> getClientMap() {
-		return clientMap;
 	}
 
 	/**

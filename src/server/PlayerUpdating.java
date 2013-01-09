@@ -1,6 +1,8 @@
 package server;
 import java.util.Iterator;
 
+import server.net.util.StreamBuffer;
+
 /*
  * This file is part of RuneSource.
  *
@@ -50,7 +52,7 @@ public final class PlayerUpdating {
 		out.writeBits(8, player.getPlayers().size());
 		for (Iterator<Player> i = player.getPlayers().iterator(); i.hasNext();) {
 			Player other = i.next();
-			if (other.getPosition().isViewableFrom(player.getPosition()) && other.getStage() == Client.Stage.LOGGED_IN && !other.needsPlacement()) {
+			if (other.getPosition().isViewableFrom(player.getPosition())) {
 				PlayerUpdating.updateOtherPlayerMovement(other, out);
 				if (other.isUpdateRequired()) {
 					PlayerUpdating.updateState(other, block, false, false);
@@ -69,7 +71,7 @@ public final class PlayerUpdating {
 				break;
 			}
 			Player other = PlayerHandler.getPlayers()[i];
-			if (other == null || other == player || other.getStage() != Client.Stage.LOGGED_IN) {
+			if (other == null || other == player) {
 				continue;
 			}
 			if (!player.getPlayers().contains(other) && other.getPosition().isViewableFrom(player.getPosition())) {
@@ -80,7 +82,7 @@ public final class PlayerUpdating {
 		}
 
 		// Append the attributes block to the main packet.
-		if (block.getBuffer().position() > 0) {
+		if (block.getBuffer().writerIndex() > 0) {
 			out.writeBits(11, 2047);
 			out.setAccessType(StreamBuffer.AccessType.BYTE_ACCESS);
 			out.writeBytes(block.getBuffer());
@@ -230,7 +232,7 @@ public final class PlayerUpdating {
 		block.writeShort(0); // Total level.
 
 		// Append the block length and the block to the packet.
-		out.writeByte(block.getBuffer().position(), StreamBuffer.ValueType.C);
+		out.writeByte(block.getBuffer().writerIndex(), StreamBuffer.ValueType.C);
 		out.writeBytes(block.getBuffer());
 	}
 

@@ -1,6 +1,8 @@
 package server;
 import java.util.Iterator;
 
+import server.net.util.StreamBuffer;
+
 /**
  * Provides static utility methods for updating NPCs.
  * 
@@ -55,7 +57,7 @@ public class NpcUpdating {
 		}
 
 		// Append the update block to the packet if need be.
-		if (block.getBuffer().position() > 0) {
+		if (block.getBuffer().writerIndex() > 0) {
 			out.writeBits(14, 16383);
 			out.setAccessType(StreamBuffer.AccessType.BYTE_ACCESS);
 			out.writeBytes(block.getBuffer());

@@ -1,4 +1,4 @@
-package server;
+package server.net.util;
 /*
  * This file is part of RuneSource.
  *
@@ -16,7 +16,9 @@ package server;
  * along with RuneSource.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.nio.ByteBuffer;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+
 
 /**
  * An abstract parent class for two buffer type objects, one for reading data
@@ -78,7 +80,7 @@ public abstract class StreamBuffer {
 	 *            the data
 	 * @return a new InBuffer
 	 */
-	public static final InBuffer newInBuffer(ByteBuffer data) {
+	public static final InBuffer newInBuffer(ChannelBuffer data) {
 		return new InBuffer(data);
 	}
 
@@ -148,7 +150,7 @@ public abstract class StreamBuffer {
 	public static final class InBuffer extends StreamBuffer {
 
 		/** The internal buffer. */
-		private ByteBuffer buffer;
+		private ChannelBuffer buffer;
 
 		/**
 		 * Creates a new InBuffer.
@@ -156,7 +158,7 @@ public abstract class StreamBuffer {
 		 * @param buffer
 		 *            the buffer
 		 */
-		private InBuffer(ByteBuffer buffer) {
+		private InBuffer(ChannelBuffer buffer) {
 			this.buffer = buffer;
 		}
 
@@ -177,7 +179,7 @@ public abstract class StreamBuffer {
 		 * @return the value
 		 */
 		public int readByte(boolean signed, ValueType type) {
-			int value = buffer.get();
+			int value = buffer.readByte();
 			switch (type) {
 			case A:
 				value = value - 128;
@@ -588,8 +590,8 @@ public abstract class StreamBuffer {
 		public byte[] readBytesReverse(int amount, ValueType type) {
 			byte[] data = new byte[amount];
 			int dataPosition = 0;
-			for (int i = buffer.position() + amount - 1; i >= buffer.position(); i--) {
-				int value = buffer.get(i);
+			for (int i = buffer.readerIndex() + amount - 1; i >= buffer.readerIndex(); i--) {
+				int value = buffer.getByte(i);
 				switch (type) {
 				case A:
 					value -= 128;
@@ -613,7 +615,7 @@ public abstract class StreamBuffer {
 		 * 
 		 * @return the buffer
 		 */
-		public ByteBuffer getBuffer() {
+		public ChannelBuffer getBuffer() {
 			return buffer;
 		}
 
@@ -627,7 +629,7 @@ public abstract class StreamBuffer {
 	public static final class OutBuffer extends StreamBuffer {
 
 		/** The internal buffer. */
-		private ByteBuffer buffer;
+		private ChannelBuffer buffer;
 
 		/** The position of the packet length in the packet header. */
 		private int lengthPosition = 0;
@@ -639,17 +641,17 @@ public abstract class StreamBuffer {
 		 *            the size
 		 */
 		private OutBuffer(int size) {
-			buffer = ByteBuffer.allocate(size);
+			buffer = ChannelBuffers.buffer(size);
 		}
 
 		@Override
 		void switchAccessType(AccessType type) {
 			switch (type) {
 			case BIT_ACCESS:
-				setBitPosition(buffer.position() * 8);
+				setBitPosition(buffer.writerIndex() * 8);
 				break;
 			case BYTE_ACCESS:
-				buffer.position((getBitPosition() + 7) / 8);
+				buffer.writerIndex((getBitPosition() + 7) / 8);
 				break;
 			}
 		}
@@ -678,7 +680,7 @@ public abstract class StreamBuffer {
 		 */
 		public void writeVariablePacketHeader(ISAACCipher cipher, int value) {
 			writeHeader(cipher, value);
-			lengthPosition = buffer.position();
+			lengthPosition = buffer.writerIndex();
 			writeByte(0);
 		}
 
@@ -694,7 +696,7 @@ public abstract class StreamBuffer {
 		 */
 		public void writeVariableShortPacketHeader(ISAACCipher cipher, int value) {
 			writeHeader(cipher, value);
-			lengthPosition = buffer.position();
+			lengthPosition = buffer.writerIndex();
 			writeShort(0);
 		}
 
@@ -704,7 +706,7 @@ public abstract class StreamBuffer {
 		 * actual variable length packet is complete.
 		 */
 		public void finishVariablePacketHeader() {
-			buffer.put(lengthPosition, (byte) (buffer.position() - lengthPosition - 1));
+			buffer.setByte(lengthPosition, (byte) (buffer.writerIndex() - lengthPosition - 1));
 		}
 
 		/**
@@ -713,7 +715,7 @@ public abstract class StreamBuffer {
 		 * the variable length packet is complete.
 		 */
 		public void finishVariableShortPacketHeader() {
-			buffer.putShort(lengthPosition, (short) (buffer.position() - lengthPosition - 2));
+			buffer.setShort(lengthPosition, (short) (buffer.writerIndex() - lengthPosition - 2));
 		}
 
 		/**
@@ -723,9 +725,9 @@ public abstract class StreamBuffer {
 		 * 
 		 * @param from
 		 */
-		public void writeBytes(ByteBuffer from) {
-			for (int i = 0; i < from.position(); i++) {
-				writeByte(from.get(i));
+		public void writeBytes(ChannelBuffer from) {
+			for(int i = 0; i < from.writerIndex(); i++) {
+				writeByte(from.getByte(i));
 			}
 		}
 
@@ -763,32 +765,30 @@ public abstract class StreamBuffer {
 			setBitPosition(getBitPosition() + amount);
 
 			// Re-size the buffer if need be.
-			int requiredSpace = bytePos - buffer.position() + 1;
+			int requiredSpace = bytePos - buffer.writerIndex() + 1;
 			requiredSpace += (amount + 7) / 8;
-			if (buffer.remaining() < requiredSpace) {
-				ByteBuffer old = buffer;
-				buffer = ByteBuffer.allocate(old.capacity() + requiredSpace);
-				old.flip();
-				buffer.put(old);
+			if (buffer.writableBytes() < requiredSpace) {
+				ChannelBuffer old = buffer;
+				buffer = ChannelBuffers.buffer(old.capacity() + requiredSpace);
+				buffer.writeBytes(old);
 			}
-
 			for (; amount > bitOffset; bitOffset = 8) {
-				byte tmp = buffer.get(bytePos);
+				byte tmp = buffer.getByte(bytePos);
 				tmp &= ~BIT_MASK[bitOffset];
 				tmp |= (value >> (amount - bitOffset)) & BIT_MASK[bitOffset];
-				buffer.put(bytePos++, tmp);
+				buffer.setByte(bytePos++, tmp);
 				amount -= bitOffset;
 			}
 			if (amount == bitOffset) {
-				byte tmp = buffer.get(bytePos);
+				byte tmp = buffer.getByte(bytePos);
 				tmp &= ~BIT_MASK[bitOffset];
 				tmp |= value & BIT_MASK[bitOffset];
-				buffer.put(bytePos, tmp);
+				buffer.setByte(bytePos, tmp);
 			} else {
-				byte tmp = buffer.get(bytePos);
+				byte tmp = buffer.getByte(bytePos);
 				tmp &= ~(BIT_MASK[amount] << (bitOffset - amount));
 				tmp |= (value & BIT_MASK[amount]) << (bitOffset - amount);
-				buffer.put(bytePos, tmp);
+				buffer.setByte(bytePos, tmp);
 			}
 		}
 
@@ -827,7 +827,7 @@ public abstract class StreamBuffer {
 			default:
 				break;
 			}
-			buffer.put((byte) value);
+			buffer.writeByte((byte) value);
 		}
 
 		/**
@@ -1065,7 +1065,7 @@ public abstract class StreamBuffer {
 		 * 
 		 * @return the buffer
 		 */
-		public ByteBuffer getBuffer() {
+		public ChannelBuffer getBuffer() {
 			return buffer;
 		}
 

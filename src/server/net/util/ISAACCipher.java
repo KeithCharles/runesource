@@ -1,4 +1,4 @@
-package server;
+package server.net.util;
 /*
  * This file is part of RuneSource.
  *
