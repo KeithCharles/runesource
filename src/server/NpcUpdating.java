@@ -27,6 +27,7 @@ public class NpcUpdating {
 
 		// Update the NPCs in the local list.
 		out.writeBits(8, player.getNpcs().size());
+		
 		for (Iterator<Npc> i = player.getNpcs().iterator(); i.hasNext();) {
 			Npc npc = i.next();
 			if (npc.getPosition().isViewableFrom(player.getPosition()) && npc.isVisible()) {
@@ -49,6 +50,7 @@ public class NpcUpdating {
 				continue;
 			}
 			if (npc.getPosition().isViewableFrom(player.getPosition())) {
+				player.getNpcs().add(npc);
 				addNpc(out, player, npc);
 				if (npc.isUpdateRequired()) {
 					NpcUpdating.updateState(block, npc);
@@ -85,9 +87,9 @@ public class NpcUpdating {
 		Position delta = Misc.delta(player.getPosition(), npc.getPosition());
 		out.writeBits(5, delta.getY());
 		out.writeBits(5, delta.getX());
-		out.writeBit(npc.isUpdateRequired());
+		out.writeBits(1, 0);
 		out.writeBits(12, npc.getNpcId());
-		out.writeBit(true);
+		out.writeBits(1, npc.isUpdateRequired() ? 1 : 0);
 	}
 
 	/**
@@ -124,17 +126,9 @@ public class NpcUpdating {
 	 */
 	private static void updateState(StreamBuffer.OutBuffer block, Npc npc) {
 		int mask = 0x0;
-
-		// TODO: NPC update masks.
-
-		if (mask >= 0x100) {
-			mask |= 0x40;
-			block.writeShort(mask, StreamBuffer.ByteOrder.LITTLE);
-		} else {
-			block.writeByte(mask);
-		}
-
-		// TODO: Append the NPC update blocks.
+		
+		
+		block.writeByte(mask);
 	}
 
 }

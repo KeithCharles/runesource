@@ -113,6 +113,10 @@ public class Server implements Runnable {
 
 		// Finally, initialize whatever else we need.
 		cycleTimer = new Misc.Stopwatch();
+		
+		
+		PlayerHandler.register(new Npc(1));
+		
 	}
 
 	/**

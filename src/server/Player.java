@@ -30,7 +30,7 @@ import server.net.util.StreamBuffer;
  */
 public class Player extends Client {
 
-	private Position position = new Position((3222 + (int)Math.round(Math.random() * 100)), (3222 + (int)Math.round(Math.random() * 100)));
+	private Position position = new Position(3222, 3222);
 	private final List<Player> players = new LinkedList<Player>();
 	private final List<Npc> npcs = new LinkedList<Npc>();
 	private MovementHandler movementHandler = new MovementHandler(this);
