@@ -30,7 +30,7 @@ import server.net.util.StreamBuffer;
  */
 public class Player extends Client {
 
-	private Position position = new Position(3222, 3222);
+	private Position position = new Position((3222 + (int)Math.round(Math.random() * 100)), (3222 + (int)Math.round(Math.random() * 100)));
 	private final List<Player> players = new LinkedList<Player>();
 	private final List<Npc> npcs = new LinkedList<Npc>();
 	private MovementHandler movementHandler = new MovementHandler(this);
@@ -166,6 +166,14 @@ public class Player extends Client {
 	 *            the arguments (separated by spaces)
 	 */
 	public void handleCommand(String keyword, String[] args) {
+		if(keyword.equals("players")) {
+			int count = 0;
+			for(Player player : PlayerHandler.getPlayers()) {
+				if(player != null)
+					count++;
+			}
+			sendMessage("Players online: " + count);
+		}
 		if (keyword.equals("master")) {
 			for (int i = 0; i < skills.length; i++) {
 				skills[i] = 99;

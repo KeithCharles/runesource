@@ -47,11 +47,9 @@ public class PlayerHandler {
 		/**
 		 * Process logins
 		 */
-		if(queuedLogins.size() > 0) {
-			for(int i = 0; i < (queuedLogins.size() > 10 ? 10 : queuedLogins.size()); i++) {
-				Player player = queuedLogins.poll();
-				player.login();
-			}
+		Player plr = null;
+		while((plr = queuedLogins.poll()) != null) {
+			plr.login();
 		}
 		
 		/**

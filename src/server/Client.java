@@ -222,6 +222,7 @@ public abstract class Client {
 		System.out.println(this + " disconnecting.");
 		try {
 			logout();
+			channel.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -326,6 +327,7 @@ public abstract class Client {
 				player.getMovementHandler().finish();
 				break;
 			default:
+				System.out.println(this + " unhandled packet received " + packetOpcode + " - " + packetLength);
 				break;
 			}
 		} catch (Exception ex) {
@@ -341,6 +343,9 @@ public abstract class Client {
 	 * @throws IOException
 	 */
 	public void send(ChannelBuffer buffer) {
+		if(channel == null || !channel.isConnected()) {
+			return;
+		}
 		channel.write(buffer);
 	}
 
@@ -422,14 +427,5 @@ public abstract class Client {
 	public Misc.Stopwatch getTimeoutStopwatch() {
 		return timeoutStopwatch;
 	}
-
-	/**
-	 * The current connection stage of the client.
-	 * 
-	 * @author blakeman8192
-	 */
-	protected enum Stage {
-		CONNECTED, LOGGING_IN, LOGGED_IN, LOGGED_OUT
-	}
-
+	
 }
