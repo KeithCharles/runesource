@@ -58,6 +58,8 @@ public class Player extends Client {
 	private final int[] experience = new int[22];
 	private final int[] equipment = new int[14];
 	private final int[] equipmentN = new int[14];
+	private final long[] friends = new long[200];
+	private final long[] ignores = new long[100];
 
 	// Client settings
 	private byte brightness = 1;
@@ -521,6 +523,10 @@ public class Player extends Client {
 		sendConfig(173, (getMovementHandler().isRunToggled() ? 1 : 0));
 		sendConfig(172, (retaliate() ? 0 : 1));
 		sendChatOptions();
+		sendFriendsListUpdate();
+		sendFriendsList();
+		sendIgnoreList();
+		updateOtherFriends(getPrivateChat());
 		
 		sendMessage("Welcome to RuneSource!");
 
@@ -529,6 +535,7 @@ public class Player extends Client {
 
 	@Override
 	public void logout() throws Exception {
+		updateOtherFriends(2);
 		PlayerHandler.unregister(this);
 		System.out.println(this + " has logged out.");
 		if (getSlot() != -1) {
@@ -869,6 +876,23 @@ public class Player extends Client {
 
 	public void setPrivateChat(byte privateChat) {
 		this.privateChat = privateChat;
+	}
+
+	public long[] getFriends() {
+		return friends;
+	}
+
+	public long[] getIgnores() {
+		return ignores;
+	}
+	
+	public boolean hasFriend(long friend) {
+		for(long l : friends) {
+			if(l == friend) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

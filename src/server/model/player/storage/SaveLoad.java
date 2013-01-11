@@ -65,6 +65,8 @@ public class SaveLoad {
 		details.setPrivateChat(player.getPrivateChat());
 		details.setTradeCompete(player.getTradeCompete());
 		details.setRunning(player.getMovementHandler().isRunToggled());
+		details.setFriends(player.getFriends());
+		details.setIgnores(player.getIgnores());
 		
 		details.setSkills(new Skill[player.getSkills().length]);
 		for (int i = 0; i < player.getSkills().length; i++) {
@@ -118,16 +120,10 @@ public class SaveLoad {
 		player.setTradeCompete(details.getTradeCompete());
 		player.getMovementHandler().setRunToggled(details.isRunning());
 		
-		/**
-		 * TODO: Should be able to do player.setAppeance(pd.apperance);
-		 */
 		for(int i = 0; i < player.getAppearance().length; i++) {
 			player.getAppearance()[i] = details.getAppearance()[i];
 		}
 		
-		/**
-		 * TODO: Should be able to do player.setColors(pd.appe);
-		 */
 		for(int i = 0; i < player.getColors().length; i++) {
 			player.getColors()[i] = details.getColors()[i];
 		}
@@ -142,9 +138,17 @@ public class SaveLoad {
 			player.getInventoryN()[i] = details.getInventory()[i].getAmount();
 		}
 		
-		for(int i = 0; i < details.getEquipment().length; i++) {
+		for(int i = 0; i < player.getEquipment().length; i++) {
 			player.getEquipment()[i] = details.getEquipment()[i].getItem();
 			player.getEquipment()[i] = details.getEquipment()[i].getAmount();
+		}
+		
+		for(int i = 0; i < player.getFriends().length; i++) {
+			player.getFriends()[i] = details.getFriends()[i];
+		}
+		
+		for(int i = 0; i < player.getIgnores().length; i++) {
+			player.getIgnores()[i] = details.getIgnores()[i];
 		}
 		
 		return 0;

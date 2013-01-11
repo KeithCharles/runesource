@@ -1,5 +1,22 @@
 package server.model.player.storage;
 
+/*
+ * This file is part of RuneSource.
+ *
+ * RuneSource is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * RuneSource is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with RuneSource.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //@JsonIgnoreProperties
 //@JsonIgnoreProperties(ignoreUnknown = true)
 public class Details {
@@ -11,6 +28,8 @@ public class Details {
 	private int[] appearance;
 	private int[] colors;
 	private Skill[] skills;
+	private long[] friends;
+	private long[] ignores;
 	private ItemContainer[] inventory;
 	private ItemContainer[] equipment;
 	
@@ -179,6 +198,22 @@ public class Details {
 
 	public void setRunning(boolean running) {
 		this.running = running;
+	}
+
+	public long[] getFriends() {
+		return friends;
+	}
+
+	public void setFriends(long[] friends) {
+		this.friends = friends;
+	}
+
+	public long[] getIgnores() {
+		return ignores;
+	}
+
+	public void setIgnores(long[] ignores) {
+		this.ignores = ignores;
 	}
 
 }

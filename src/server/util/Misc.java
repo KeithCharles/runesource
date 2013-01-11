@@ -88,7 +88,20 @@ public class Misc {
 	public static final int GENDER_MALE = 0;
 	public static final int GENDER_FEMALE = 1;
 
-	private static char xlateTable[] = { ' ', 'e', 't', 'a', 'o', 'i', 'h', 'n', 's', 'r', 'd', 'l', 'u', 'm', 'w', 'c', 'y', 'f', 'g', 'p', 'b', 'v', 'k', 'x', 'j', 'q', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', '.', ',', ':', ';', '(', ')', '-', '&', '*', '\\', '\'', '@', '#', '+', '=', '\243', '$', '%', '"', '[', ']' };
+	/**
+	 * An array of valid characters in a long username.
+	 */
+	public static final char VALID_CHARS[] = { '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+			't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',
+			'-', '+', '=', ':', ';', '.', '>', '<', ',', '"', '[', ']', '|', '?', '/', '`' };
+
+	/**
+	 * Packed text translate table.
+	 */
+	public static final char XLATE_TABLE[] = { ' ', 'e', 't', 'a', 'o', 'i', 'h', 'n', 's', 'r', 'd', 'l', 'u', 'm', 'w', 'c', 'y', 'f', 'g', 'p',
+			'b', 'v', 'k', 'x', 'j', 'q', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', '.', ',', ':', ';', '(', ')', '-',
+			'&', '*', '\\', '\'', '@', '#', '+', '=', '\243', '$', '%', '"', '[', ']' };
+	
 	private static char decodeBuf[] = new char[4096];
 	private static boolean[] stackableItems = new boolean[7000];
 
@@ -225,11 +238,11 @@ public class Misc {
 			int val = packedData[i / 2] >> (4 - 4 * (i % 2)) & 0xf;
 			if (highNibble == -1) {
 				if (val < 13)
-					decodeBuf[idx++] = xlateTable[val];
+					decodeBuf[idx++] = XLATE_TABLE[val];
 				else
 					highNibble = val;
 			} else {
-				decodeBuf[idx++] = xlateTable[((highNibble << 4) + val) - 195];
+				decodeBuf[idx++] = XLATE_TABLE[((highNibble << 4) + val) - 195];
 				highNibble = -1;
 			}
 		}
@@ -260,6 +273,25 @@ public class Misc {
 			l /= 37L;
 		return l;
 	}
+	
+	/**
+	 * Converts a long to a name.
+	 * 
+	 * @param l
+	 *            The long.
+	 * @return The name.
+	 */
+	public static String longToName(long l) {
+		int i = 0;
+		char ac[] = new char[12];
+		while (l != 0L) {
+			long l1 = l;
+			l /= 37L;
+			ac[11 - i++] = VALID_CHARS[(int) (l1 - l * 37L)];
+		}
+		return new String(ac, 12 - i, i);
+	}
+	
 
 	/**
 	 * Returns the delta coordinates. Note that the returned Position is not an

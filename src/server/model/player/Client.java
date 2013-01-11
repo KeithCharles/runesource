@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
+import server.Constants;
 import server.model.Position;
 import server.net.ReceivedPacket;
 import server.net.util.ISAACCipher;
@@ -99,7 +101,113 @@ public abstract class Client {
 			sendSkill(i, player.getSkills()[i], player.getExperience()[i]);
 		}
 	}
+	
+	/**
+	 * Tells the client we have logged into the friends server (spoofed)
+	 */
+	public void sendFriendsListUpdate() {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(2);
+		out.writeHeader(getEncryptor(), 221);
+		out.writeByte(2);
+		send(out.getBuffer());
+	}
 
+	/**
+	 * Sends the friends list to the player, really only used when logging in
+	 */
+	public void sendFriendsList() {
+		for(long l : player.getFriends()) {
+			if(l == 0) {
+				continue;
+			}
+			byte status = 0;
+			Player plr = PlayerHandler.getPlayerByName(Misc.longToName(l));
+			if(plr != null) {
+				if(plr.getPrivateChat() == 0) {
+					status = Constants.WORLD;
+				} else if(plr.getPrivateChat() == 1) {
+					if(plr.hasFriend(Misc.nameToLong(player.getUsername()))) {
+						status = Constants.WORLD;
+					}
+				}
+			}
+			sendFriendUpdate(l, status);
+		}
+	}
+	
+	/**
+	 * Tells all your friends that your private chat status has changed.
+	 * @param status The status of the players private chat
+	 */
+	public void updateOtherFriends(int status) {
+		long myName = Misc.nameToLong(player.getUsername());
+		for(Player plr : PlayerHandler.getPlayers()) {
+			if(plr == null || plr == player) {
+				continue;
+			}
+			if(plr.hasFriend(myName)) {
+				byte world = 0;
+				if(status == 0) {
+					world = Constants.WORLD;
+				} else if(status == 1) {
+					if(player.hasFriend(Misc.nameToLong(plr.getUsername()))) {
+						world = Constants.WORLD;
+					}
+				}
+				plr.sendFriendUpdate(myName, world);
+			}
+		}
+	}
+	
+	/**
+	 * Sends the ignore list to the client
+	 */
+	public void sendIgnoreList() {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer((player.getFriends().length * 8) + 2);
+		out.writeVariableShortPacketHeader(getEncryptor(), 214);
+		for(long i : player.getIgnores()) {
+			if(i == 0) {
+				continue;
+			}
+			out.writeLong(i);
+		}
+		out.finishVariableShortPacketHeader();
+		send(out.getBuffer());
+	}
+
+	
+	/**
+	 * Sends a friend update to the friends list indicating which world they are on
+	 * @param name The username as a long
+	 * @param world The world the player is on
+	 */
+	public void sendFriendUpdate(long name, byte world) {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer((player.getFriends().length * 8) + 2);
+		out.writeHeader(getEncryptor(), 50);
+		out.writeLong(name);
+		out.writeByte(world);
+		send(out.getBuffer());
+	}
+	
+	/**
+	 * Sends a private message
+	 * @param name The name of the person sending the message as a long
+	 * @param rights Rights of the player
+	 * @param message The message itself
+	 */
+	public void sendPrivateMessage(long name, byte rights, byte[] message) {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(15 + message.length);
+		out.writeVariablePacketHeader(getEncryptor(), 196);
+		out.writeLong(name);
+		out.writeInt(new Random().nextInt());
+		out.writeByte(rights);
+		for(int i = 0; i < message.length; i++) {
+			out.writeByte(message[i]);
+		}
+		out.finishVariablePacketHeader();
+		send(out.getBuffer());
+	}
+	
 	/**
 	 * Sends the skill to the client.
 	 * 
@@ -411,10 +519,79 @@ public abstract class Client {
 				status = (byte) in.readByte();
 				if (status >= 0 && status <= 3) {
 					player.setPrivateChat(status);
+					updateOtherFriends(player.getPrivateChat());
 				}
 				status = (byte) in.readByte();
 				if (status >= 0 && status <= 3) {
 					player.setTradeCompete(status);
+				}
+				break;
+			case 188: // Add friend
+				long friend = in.readLong();
+				for(int i = 0; i < player.getFriends().length; i++) {
+					if(player.getFriends()[i] == 0) {
+						player.getFriends()[i] = friend;
+						break;
+					}
+				}
+				Player plr = PlayerHandler.getPlayerByName(Misc.longToName(friend));
+				byte world = 0;
+				if(plr != null) {
+					if(plr.getPrivateChat() == 0) {
+						world = Constants.WORLD;
+					} else if(plr.getPrivateChat() == 1) {
+						if(plr.hasFriend(Misc.nameToLong(player.getUsername()))) {
+							world = Constants.WORLD;
+						}
+					}
+					if(player.getPrivateChat() == 1 && plr.hasFriend(Misc.nameToLong(player.getUsername()))) {
+						plr.sendFriendUpdate(Misc.nameToLong(player.getUsername()), Constants.WORLD);
+					}
+				}
+				sendFriendUpdate(friend, world);
+				break;
+			case 215: // Remove friend
+				friend = in.readLong();
+				for(int i = 0; i < player.getFriends().length; i++) {
+					if(player.getFriends()[i] == friend) {
+						player.getFriends()[i] = 0;
+						break;
+					}
+				}
+				if(player.getPrivateChat() == 1) {
+					plr = PlayerHandler.getPlayerByName(Misc.longToName(friend));
+					if(plr != null) {
+						plr.sendFriendUpdate(Misc.nameToLong(player.getUsername()), (byte)0);
+					}
+				}
+				break;
+			case 126: // Send pm
+				friend = in.readLong();
+				plr = PlayerHandler.getPlayerByName(Misc.longToName(friend));
+				if(plr == null) {
+					sendMessage("That is currently offline.");
+					break;
+				}
+				int size = packetLength - 8;
+				byte[] message = in.readBytes(size);
+				plr.sendPrivateMessage(Misc.nameToLong(player.getUsername()), (byte) player.getStaffRights(), message);
+				break;
+			case 74: // Remove ignore
+				long ignore = in.readLong();
+				for(int i = 0; i < player.getIgnores().length; i++) {
+					if(player.getIgnores()[i] == ignore) {
+						player.getIgnores()[i] = 0;
+						break;
+					}
+				}
+				break;
+			case 133: // Add ignore
+				ignore = in.readLong();
+				for(int i = 0; i < player.getIgnores().length; i++) {
+					if(player.getIgnores()[i] == 0) {
+						player.getIgnores()[i] = ignore;
+						break;
+					}
 				}
 				break;
 			case 0: // Empty packets

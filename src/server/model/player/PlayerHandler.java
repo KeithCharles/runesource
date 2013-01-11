@@ -34,7 +34,7 @@ public class PlayerHandler {
 
 	/** All registered NPCs. */
 	private static final Npc[] npcs = new Npc[8192];
-	
+
 	/**
 	 * Login queue
 	 */
@@ -46,15 +46,15 @@ public class PlayerHandler {
 	 * @throws Exception
 	 */
 	public static void process() throws Exception {
-		
+
 		/**
 		 * Process logins
 		 */
 		Player plr = null;
-		while((plr = queuedLogins.poll()) != null) {
+		while ((plr = queuedLogins.poll()) != null) {
 			plr.login();
 		}
-		
+
 		/**
 		 * Process packets for each players
 		 */
@@ -70,7 +70,7 @@ public class PlayerHandler {
 				player.disconnect();
 			}
 		}
-		
+
 		// Perform any logic processing for players.
 		for (int i = 0; i < players.length; i++) {
 			Player player = players[i];
@@ -113,7 +113,7 @@ public class PlayerHandler {
 				player.disconnect();
 			}
 		}
-		
+
 		// Reset all players after cycle.
 		for (int i = 0; i < players.length; i++) {
 			Player player = players[i];
@@ -250,13 +250,31 @@ public class PlayerHandler {
 	public static Npc[] getNpcs() {
 		return npcs;
 	}
-	
+
 	/**
 	 * Queues a successful login
+	 * 
 	 * @param player
 	 */
 	public static void queueLogin(Player player) {
 		queuedLogins.add(player);
+	}
+
+	/**
+	 * Gets a players instance by username
+	 * 
+	 * @param name
+	 *            The username
+	 * @return The player instance
+	 */
+	public static Player getPlayerByName(String name) {
+		for (Player player : players) {
+			if (player == null)
+				continue;
+			if (player.getUsername().equalsIgnoreCase(name))
+				return player;
+		}
+		return null;
 	}
 
 }
