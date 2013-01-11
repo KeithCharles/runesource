@@ -2,7 +2,6 @@ package server.model.player.storage;
 
 public class Skill {
 	
-	private int id;
 	private int level;
 	private int xp;
 	
@@ -10,18 +9,9 @@ public class Skill {
 		
 	}
 	
-	public Skill(int id, int level, int xp) {
-		this.setId(id);
+	public Skill(int level, int xp) {
 		this.setLevel(level);
 		this.setXp(xp);
-	}
-
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
 	}
 
 	public int getLevel() {

@@ -58,17 +58,17 @@ public class SaveLoad {
 		
 		details.setSkills(new Skill[player.getSkills().length]);
 		for (int i = 0; i < player.getSkills().length; i++) {
-			details.getSkills()[i] = new Skill(i, player.getSkills()[i], player.getExperience()[i]);
+			details.getSkills()[i] = new Skill(player.getSkills()[i], player.getExperience()[i]);
 		}
 		
 		details.setInventory(new ItemContainer[player.getInventory().length]);
 		for (int i = 0; i < player.getInventory().length; i++) {
-			details.getInventory()[i] = new ItemContainer(i, (player.getInventory()[i] - 1), player.getInventoryN()[i]);
+			details.getInventory()[i] = new ItemContainer((player.getInventory()[i] - 1), player.getInventoryN()[i]);
 		}
 		
 		details.setEquipment( new ItemContainer[player.getEquipment().length]);
 		for (int i = 0; i < player.getEquipment().length; i++) {
-			details.getEquipment()[i] = new ItemContainer(i, player.getEquipment()[i], player.getEquipmentN()[i]);
+			details.getEquipment()[i] = new ItemContainer(player.getEquipment()[i], player.getEquipmentN()[i]);
 		}
 	
 		mapper.writeValue(new File(directory + player.getUsername() + ".json"), details);

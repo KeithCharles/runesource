@@ -2,7 +2,6 @@ package server.model.player.storage;
 
 public class ItemContainer {
 
-	private int slot;
 	private int item;
 	private int amount;
 	
@@ -10,18 +9,9 @@ public class ItemContainer {
 		
 	}
 	
-	public ItemContainer(int slot, int item, int amount) {
-		this.setSlot(slot);
+	public ItemContainer(int item, int amount) {
 		this.setItem(item);
 		this.setAmount(amount);
-	}
-
-	public int getSlot() {
-		return slot;
-	}
-
-	public void setSlot(int slot) {
-		this.slot = slot;
 	}
 
 	public int getItem() {
