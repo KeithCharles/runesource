@@ -1,5 +1,7 @@
 package server;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import server.net.util.StreamBuffer;
 
@@ -35,8 +37,8 @@ public final class PlayerUpdating {
 	 */
 	public static void update(Player player) {
 		// XXX: The buffer sizes may need to be tuned.
-		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(2048);
-		StreamBuffer.OutBuffer block = StreamBuffer.newOutBuffer(1024);
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(10240);
+		StreamBuffer.OutBuffer block = StreamBuffer.newOutBuffer(10000);
 
 		// Initialize the update packet.
 		out.writeVariableShortPacketHeader(player.getEncryptor(), 81);
@@ -50,20 +52,22 @@ public final class PlayerUpdating {
 
 		// Update other local players.
 		out.writeBits(8, player.getPlayers().size());
-		for (Iterator<Player> i = player.getPlayers().iterator(); i.hasNext();) {
-			Player other = i.next();
-			if (other.getPosition().isViewableFrom(player.getPosition())) {
-				PlayerUpdating.updateOtherPlayerMovement(other, out);
-				if (other.isUpdateRequired()) {
-					PlayerUpdating.updateState(other, block, false, false);
+		
+		Iterator<Entry<Integer, Player>> it = player.getPlayers().entrySet().iterator();
+		while(it.hasNext()) {
+			Map.Entry<Integer, Player> pairs = (Map.Entry<Integer, Player>)it.next();
+			if (pairs.getValue().getPosition().isViewableFrom(player.getPosition())) {
+				PlayerUpdating.updateOtherPlayerMovement(pairs.getValue(), out);
+				if (pairs.getValue().isUpdateRequired()) {
+					PlayerUpdating.updateState(pairs.getValue(), block, false, false);
 				}
 			} else {
 				out.writeBit(true);
 				out.writeBits(2, 3);
-				i.remove();
+				it.remove();
 			}
 		}
-
+		
 		// Update the local player list.
 		for (int i = 0; i < PlayerHandler.getPlayers().length; i++) {
 			if (player.getPlayers().size() >= 255) {
@@ -74,8 +78,8 @@ public final class PlayerUpdating {
 			if (other == null || other == player) {
 				continue;
 			}
-			if (!player.getPlayers().contains(other) && other.getPosition().isViewableFrom(player.getPosition())) {
-				player.getPlayers().add(other);
+			if (!player.getPlayers().containsKey(i) && other.getPosition().isViewableFrom(player.getPosition())) {
+				player.getPlayers().put(i, other);
 				PlayerUpdating.addPlayer(out, player, other);
 				PlayerUpdating.updateState(other, block, true, false);
 			}

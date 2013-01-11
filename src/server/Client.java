@@ -355,6 +355,9 @@ public abstract class Client {
 	 * @return the host
 	 */
 	public String getHost() {
+		if(channel == null) {
+			return "unknown";
+		}
 		return ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
 	}
 

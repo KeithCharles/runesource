@@ -16,8 +16,10 @@ package server;
  * along with RuneSource.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.jboss.netty.channel.Channel;
 
@@ -30,8 +32,8 @@ import server.net.util.StreamBuffer;
  */
 public class Player extends Client {
 
-	private Position position = new Position(3222, 3222);
-	private final List<Player> players = new LinkedList<Player>();
+	private Position position = new Position((3222 + (int)Math.floor(Math.random() * 100)), (3222 + (int)Math.floor(Math.random() * 100)));
+	private final Map<Integer, Player> players = new HashMap<Integer, Player>();
 	private final List<Npc> npcs = new LinkedList<Npc>();
 	private MovementHandler movementHandler = new MovementHandler(this);
 	private Position currentRegion = new Position(0, 0, 0);
@@ -110,11 +112,11 @@ public class Player extends Client {
 	 */
 	public void process() throws Exception {
 		// If no packet for more than 5 seconds, disconnect.
-		if (getTimeoutStopwatch().elapsed() > 5000) {
+		/*if (getTimeoutStopwatch().elapsed() > 5000) {
 			System.out.println(this + " timed out.");
 			disconnect();
 			return;
-		}
+		}*/
 		movementHandler.process();
 	}
 
@@ -759,12 +761,16 @@ public class Player extends Client {
 		return gender;
 	}
 
-	public List<Player> getPlayers() {
+/*	public List<Player> getPlayers() {
 		return players;
-	}
+	} */
 
 	public List<Npc> getNpcs() {
 		return npcs;
+	}
+
+	public Map<Integer, Player> getPlayers() {
+		return players;
 	}
 
 }

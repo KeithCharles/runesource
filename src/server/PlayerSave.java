@@ -122,7 +122,10 @@ public class PlayerSave {
 	 *         invalid username/password
 	 */
 	public static int load(Player player) throws Exception {
-		File file = new File(directory + player.getUsername() + ".txt");
+		
+		return 1;
+		
+		/*File file = new File(directory + player.getUsername() + ".txt");
 		if (!file.exists()) {
 			return 1;
 		}
@@ -198,7 +201,7 @@ public class PlayerSave {
 		}
 
 		reader.close();
-		return 0;
+		return 0;*/
 	}
 
 }

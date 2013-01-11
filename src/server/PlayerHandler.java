@@ -110,7 +110,7 @@ public class PlayerHandler {
 				player.disconnect();
 			}
 		}
-
+		
 		// Reset all players after cycle.
 		for (int i = 0; i < players.length; i++) {
 			Player player = players[i];

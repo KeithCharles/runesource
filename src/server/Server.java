@@ -24,6 +24,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 import server.net.PipelineFactory;
+import server.net.util.ISAACCipher;
 
 /**
  * The main core of RuneSource.
@@ -114,8 +115,18 @@ public class Server implements Runnable {
 		// Finally, initialize whatever else we need.
 		cycleTimer = new Misc.Stopwatch();
 		
-		
 		PlayerHandler.register(new Npc(1));
+		
+		/*for(int i = 0; i < 1000; i++) {
+			Player player = new Player(null);
+			player.setUsername("b0t" + i);
+			player.setEncryptor(new ISAACCipher(new int[10]));
+			try {
+				player.login();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}*/
 		
 	}
 
@@ -138,6 +149,9 @@ public class Server implements Runnable {
 	 */
 	private void sleep() throws InterruptedException {
 		long sleepTime = cycleRate - cycleTimer.elapsed();
+		
+		System.out.println("Cycle time: " + cycleTimer.elapsed());
+		
 		if (sleepTime > 0) {
 			Thread.sleep(sleepTime);
 		} else {
