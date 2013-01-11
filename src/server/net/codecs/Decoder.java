@@ -21,9 +21,9 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 
-import server.Misc;
 import server.net.ReceivedPacket;
 import server.net.util.ISAACCipher;
+import server.util.Misc;
 
 /**
  * 

@@ -22,9 +22,9 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
-import server.Client;
-import server.Player;
-import server.PlayerHandler;
+import server.model.player.Client;
+import server.model.player.Player;
+import server.model.player.PlayerHandler;
 
 /**
  * 

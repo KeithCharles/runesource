@@ -24,11 +24,11 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 
-import server.Client;
-import server.Misc;
-import server.Player;
+import server.model.player.Client;
+import server.model.player.Player;
 import server.net.util.ISAACCipher;
 import server.net.util.StreamBuffer;
+import server.util.Misc;
 
 /**
  * 
