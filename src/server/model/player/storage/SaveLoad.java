@@ -63,7 +63,7 @@ public class SaveLoad {
 		
 		details.setInventory(new ItemContainer[player.getInventory().length]);
 		for (int i = 0; i < player.getInventory().length; i++) {
-			details.getInventory()[i] = new ItemContainer((player.getInventory()[i] - 1), player.getInventoryN()[i]);
+			details.getInventory()[i] = new ItemContainer(player.getInventory()[i], player.getInventoryN()[i]);
 		}
 		
 		details.setEquipment( new ItemContainer[player.getEquipment().length]);
@@ -118,7 +118,7 @@ public class SaveLoad {
 		}
 		
 		for(int i = 0; i < player.getInventory().length; i++) {
-			player.getInventory()[i] = (details.getInventory()[i].getItem() + 1);
+			player.getInventory()[i] = details.getInventory()[i].getItem();
 			player.getInventoryN()[i] = details.getInventory()[i].getAmount();
 		}
 		
