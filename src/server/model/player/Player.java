@@ -47,7 +47,7 @@ public class Player extends Client {
 	private int slot = -1;
 	private int staffRights = 0;
 	private int chatColor;
-	private int chatEffects;
+	private int chatEffect;
 	private byte[] chatText;
 	private int gender = Misc.GENDER_MALE;
 	private final int[] appearance = new int[7];
@@ -59,6 +59,18 @@ public class Player extends Client {
 	private final int[] equipment = new int[14];
 	private final int[] equipmentN = new int[14];
 
+	// Client settings
+	private byte brightness = 1;
+	private boolean mouseButtons;
+	private boolean splitScreen = false;
+	private boolean acceptAid = false;
+	private boolean retaliate = false;
+	private boolean chatEffects = false;
+	private byte publicChat = 0;
+	private byte privateChat = 0;
+	private byte tradeCompete = 0;
+	
+	
 	// Various player update flags.
 	private boolean updateRequired = false;
 	private boolean appearanceUpdateRequired = false;
@@ -501,6 +513,15 @@ public class Player extends Client {
 		sendSidebarInterface(12, 147);
 		sendSidebarInterface(13, 6299);
 		sendSidebarInterface(0, 2423);
+		sendConfig(166, getBrightness() + 1);
+		sendConfig(287, (splitScreen() ? 1 : 0));
+		sendConfig(170, (mouseButtons() ? 1 : 0));
+		sendConfig(171, (!chatEffects() ? 1 : 0));
+		sendConfig(427, (acceptAid() ? 1 : 0));
+		sendConfig(173, (getMovementHandler().isRunToggled() ? 1 : 0));
+		sendConfig(172, (retaliate() ? 0 : 1));
+		sendChatOptions();
+		
 		sendMessage("Welcome to RuneSource!");
 
 		System.out.println(this + " has logged in.");
@@ -700,11 +721,11 @@ public class Player extends Client {
 	}
 
 	public void setChatEffects(int chatEffects) {
-		this.chatEffects = chatEffects;
+		this.chatEffect = chatEffects;
 	}
 
 	public int getChatEffects() {
-		return chatEffects;
+		return chatEffect;
 	}
 
 	public void setChatText(byte[] chatText) {
@@ -776,6 +797,78 @@ public class Player extends Client {
 
 	public Map<Integer, Player> getPlayers() {
 		return players;
+	}
+
+	public byte getBrightness() {
+		return brightness;
+	}
+
+	public void setBrightness(byte brightness) {
+		this.brightness = brightness;
+	}
+
+	public boolean mouseButtons() {
+		return mouseButtons;
+	}
+
+	public void setMouseButtons(boolean mouseButtons) {
+		this.mouseButtons = mouseButtons;
+	}
+
+	public boolean splitScreen() {
+		return splitScreen;
+	}
+
+	public void setSplitScreen(boolean splitScreen) {
+		this.splitScreen = splitScreen;
+	}
+
+	public boolean acceptAid() {
+		return acceptAid;
+	}
+
+	public void setAcceptAid(boolean acceptAid) {
+		this.acceptAid = acceptAid;
+	}
+
+	public boolean retaliate() {
+		return retaliate;
+	}
+
+	public void setRetaliate(boolean retaliate) {
+		this.retaliate = retaliate;
+	}
+
+	public boolean chatEffects() {
+		return chatEffects;
+	}
+
+	public void setChatEffects(boolean chatEffects) {
+		this.chatEffects = chatEffects;
+	}
+
+	public byte getPublicChat() {
+		return publicChat;
+	}
+
+	public void setPublicChat(byte pubicChat) {
+		this.publicChat = pubicChat;
+	}
+
+	public byte getTradeCompete() {
+		return tradeCompete;
+	}
+
+	public void setTradeCompete(byte tradeCompete) {
+		this.tradeCompete = tradeCompete;
+	}
+
+	public byte getPrivateChat() {
+		return privateChat;
+	}
+
+	public void setPrivateChat(byte privateChat) {
+		this.privateChat = privateChat;
 	}
 
 }

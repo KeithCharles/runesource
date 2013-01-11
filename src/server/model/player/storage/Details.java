@@ -1,5 +1,7 @@
 package server.model.player.storage;
 
+//@JsonIgnoreProperties
+//@JsonIgnoreProperties(ignoreUnknown = true)
 public class Details {
 
 	private String password;
@@ -11,6 +13,17 @@ public class Details {
 	private Skill[] skills;
 	private ItemContainer[] inventory;
 	private ItemContainer[] equipment;
+	
+	private byte brightness = 1;
+	private boolean mouseButtons;
+	private boolean splitScreen = false;
+	private boolean acceptAid = false;
+	private boolean retaliate = false;
+	private boolean chatEffects = false;
+	private byte publicChat = 0;
+	private byte privateChat = 0;
+	private byte tradeCompete = 0;
+	private boolean running;
 	
 	public Details() {
 		
@@ -86,6 +99,86 @@ public class Details {
 
 	public void setEquipment(ItemContainer[] equipment) {
 		this.equipment = equipment;
+	}
+
+	public byte getBrightness() {
+		return brightness;
+	}
+
+	public void setBrightness(byte brightness) {
+		this.brightness = brightness;
+	}
+
+	public boolean isMouseButtons() {
+		return mouseButtons;
+	}
+
+	public void setMouseButtons(boolean mouseButtons) {
+		this.mouseButtons = mouseButtons;
+	}
+
+	public boolean isSplitScreen() {
+		return splitScreen;
+	}
+
+	public void setSplitScreen(boolean splitScreen) {
+		this.splitScreen = splitScreen;
+	}
+
+	public boolean isAcceptAid() {
+		return acceptAid;
+	}
+
+	public void setAcceptAid(boolean acceptAid) {
+		this.acceptAid = acceptAid;
+	}
+
+	public boolean isRetaliate() {
+		return retaliate;
+	}
+
+	public void setRetaliate(boolean retaliate) {
+		this.retaliate = retaliate;
+	}
+
+	public boolean isChatEffects() {
+		return chatEffects;
+	}
+
+	public void setChatEffects(boolean chatEffects) {
+		this.chatEffects = chatEffects;
+	}
+
+	public byte getPublicChat() {
+		return publicChat;
+	}
+
+	public void setPublicChat(byte pubicChat) {
+		this.publicChat = pubicChat;
+	}
+
+	public byte getPrivateChat() {
+		return privateChat;
+	}
+
+	public void setPrivateChat(byte privateChat) {
+		this.privateChat = privateChat;
+	}
+
+	public byte getTradeCompete() {
+		return tradeCompete;
+	}
+
+	public void setTradeCompete(byte tradeCompete) {
+		this.tradeCompete = tradeCompete;
+	}
+
+	public boolean isRunning() {
+		return running;
+	}
+
+	public void setRunning(boolean running) {
+		this.running = running;
 	}
 
 }

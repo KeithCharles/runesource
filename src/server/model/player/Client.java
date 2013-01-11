@@ -29,6 +29,7 @@ import server.model.Position;
 import server.net.ReceivedPacket;
 import server.net.util.ISAACCipher;
 import server.net.util.StreamBuffer;
+import server.net.util.StreamBuffer.ByteOrder;
 import server.util.Misc;
 
 /**
@@ -187,6 +188,18 @@ public abstract class Client {
 		out.finishVariablePacketHeader();
 		send(out.getBuffer());
 	}
+	
+	/**
+	 * Sends the chat options under the chatbox
+	 */
+	public void sendChatOptions() {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(4);
+		out.writeHeader(getEncryptor(), 206);
+		out.writeByte(player.getPublicChat());
+		out.writeByte(player.getPrivateChat());
+		out.writeByte(player.getTradeCompete());
+		send(out.getBuffer());
+	}
 
 	/**
 	 * Sends a sidebar interface.
@@ -247,6 +260,52 @@ public abstract class Client {
 		case 152:
 			player.getMovementHandler().setRunToggled(false);
 			break;
+		case 5451:
+		case 5452:
+			player.setBrightness((byte) 0);
+			break;
+		case 6273:
+		case 6157:
+			player.setBrightness((byte) 1);
+			break;
+		case 6275:
+		case 6274:
+			player.setBrightness((byte) 2);
+			break;
+		case 6277:
+		case 6276:
+			player.setBrightness((byte) 3);
+			break;
+		case 6279:
+			player.setMouseButtons(true);
+			break;
+		case 6278:
+			player.setMouseButtons(false);
+			break;
+		case 6280:
+			player.setChatEffects(true);
+			break;
+		case 6281:
+			player.setChatEffects(false);
+			break;
+		case 952:
+			player.setSplitScreen(true);
+			break;
+		case 953:
+			player.setSplitScreen(false);
+			break;
+		case 12591:
+			player.setAcceptAid(true);
+			break;
+		case 12590:
+			player.setAcceptAid(false);
+			break;
+		case 150:
+			player.setRetaliate(true);
+			break;
+		case 151:
+			player.setRetaliate(false);
+			break;
 		default:
 			System.out.println("Unhandled button: " + buttonId);
 			break;
@@ -259,6 +318,22 @@ public abstract class Client {
 	public void sendLogout() {
 		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(1);
 		out.writeHeader(getEncryptor(), 109);
+		send(out.getBuffer());
+	}
+	
+	/**
+	 * Sends a configuration update
+	 * 
+	 * @param id
+	 *            The id of the config to update
+	 * @param state
+	 *            The state to update to
+	 */
+	public void sendConfig(int id, int state) {
+		StreamBuffer.OutBuffer out = StreamBuffer.newOutBuffer(4);
+		out.writeHeader(getEncryptor(), 36);
+		out.writeShort(id, ByteOrder.LITTLE);
+		out.writeByte(state);
 		send(out.getBuffer());
 	}
 
@@ -327,6 +402,41 @@ public abstract class Client {
 					player.getMovementHandler().addToPath(new Position(path[i][0], path[i][1]));
 				}
 				player.getMovementHandler().finish();
+				break;
+			case 95: // Chat option changing
+				byte status = (byte) in.readByte();
+				if (status >= 0 && status <= 3) {
+					player.setPublicChat(status);
+				}
+				status = (byte) in.readByte();
+				if (status >= 0 && status <= 3) {
+					player.setPrivateChat(status);
+				}
+				status = (byte) in.readByte();
+				if (status >= 0 && status <= 3) {
+					player.setTradeCompete(status);
+				}
+				break;
+			case 0: // Empty packets
+			case 3:
+			case 202:
+			case 77:
+			case 86:
+			case 78:
+			case 36:
+			case 226:
+			case 246:
+			case 148:
+			case 183:
+			case 230:
+			case 136:
+			case 189:
+			case 152:
+			case 200:
+			case 85:
+			case 165:
+			case 238:
+			case 150:
 				break;
 			default:
 				System.out.println(this + " unhandled packet received " + packetOpcode + " - " + packetLength);

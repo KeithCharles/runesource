@@ -55,6 +55,16 @@ public class SaveLoad {
 		details.setGender(player.getGender());
 		details.setAppearance(player.getAppearance());
 		details.setColors(player.getColors());
+		details.setBrightness(player.getBrightness());
+		details.setMouseButtons(player.mouseButtons());
+		details.setSplitScreen(player.splitScreen());
+		details.setAcceptAid(player.acceptAid());
+		details.setRetaliate(player.retaliate());
+		details.setChatEffects(player.chatEffects());
+		details.setPublicChat(player.getPublicChat());
+		details.setPrivateChat(player.getPrivateChat());
+		details.setTradeCompete(player.getTradeCompete());
+		details.setRunning(player.getMovementHandler().isRunToggled());
 		
 		details.setSkills(new Skill[player.getSkills().length]);
 		for (int i = 0; i < player.getSkills().length; i++) {
@@ -97,6 +107,16 @@ public class SaveLoad {
 		player.setStaffRights(details.getRights());
 		player.setPosition(new Position(details.getLocation().getX(), details.getLocation().getY(), details.getLocation().getZ()));
 		player.setGender(details.getGender());
+		player.setBrightness(details.getBrightness());
+		player.setMouseButtons(details.isMouseButtons());
+		player.setSplitScreen(details.isSplitScreen());
+		player.setAcceptAid(details.isAcceptAid());
+		player.setRetaliate(details.isRetaliate());
+		player.setChatEffects(details.isChatEffects());
+		player.setPublicChat(details.getPublicChat());
+		player.setPrivateChat(details.getPrivateChat());
+		player.setTradeCompete(details.getTradeCompete());
+		player.getMovementHandler().setRunToggled(details.isRunning());
 		
 		/**
 		 * TODO: Should be able to do player.setAppeance(pd.apperance);
